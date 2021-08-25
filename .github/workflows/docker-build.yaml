@@ -21,5 +21,5 @@ jobs:
 
       - uses: docker/build-push-action@v2
         with:
-          tags: ghcr.io/janw/restic:${{ steps.docker-tag.outputs.tag }}
+          tags: ghcr.io/janw/lm-sensors-exporter:${{ steps.docker-tag.outputs.tag }}
           push: true
