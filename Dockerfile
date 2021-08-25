@@ -1,19 +1,30 @@
-# Start from a Debian image with the latest version of Go installed
-# and a workspace (GOPATH) configured at /go.
-FROM golang:1.8
+FROM golang:1.16-buster as build
 
-# Copy the local package files to the container's workspace.
-ADD sensor-exporter /go/src/github.com/ncabatoff/sensor-exporter
+RUN set -e; \
+    apt update; \
+    apt install -y libsensors4-dev; \
+    apt clean
 
-# Build the outyet command inside the container.
-# (You may fetch or manage dependencies here,
-# either manually or with a tool like "godep".)
-RUN apt-get update
-RUN apt-get --yes install libsensors4-dev
-RUN go get github.com/ncabatoff/gosensors github.com/prometheus/client_golang/prometheus && go install github.com/ncabatoff/sensor-exporter
+WORKDIR /src
+COPY go.* .
+COPY vendor ./vendor
+COPY sensor-exporter .
 
-# Run the outyet command by default when the container starts.
-ENTRYPOINT /go/bin/sensor-exporter
+RUN GO111MODULE=on go build \
+    -v \
+    -mod=vendor \
+    -o /sensor-exporter
 
-# Document that the service listens on port 9255.
+
+FROM debian:buster
+
+RUN set -e; \
+    apt update; \
+    apt install -y libsensors4-dev; \
+    apt clean
+
+COPY --from=build /sensor-exporter /
+
 EXPOSE 9255
+
+ENTRYPOINT /sensor-exporter
